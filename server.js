@@ -7,14 +7,28 @@ var io = require('socket.io')(http);
 
 app.use(express.static(__dirname + '/public'));
 
+var clientInfo = {
+
+};
+
 // on() is going to let you listen for events
 io.on('connection', function (socket) {
   console.log('user connected via socket.io!');
 
+  socket.on('joinRoom', function (req) {
+    clientInfo[socket.id] = req;
+    socket.join(req.room);
+    socket.broadcast.to(req.room).emit('message', {
+      name: 'System',
+      text: req.name + ' has join!',
+      timestamp : moment().valueOf()
+    });
+  });
+
   socket.on('message', function (message) {
     console.log('Message received: ' + message.text);
     message.timestamp = moment().valueOf();
-    io.emit('message', message);  // send the message to everyone
+    io.to(clientInfo[socket.id].room).emit('message', message);  // send the message to everyone
   });
 
   // timestamp property - JavaScript timestamp (milliseconds)
